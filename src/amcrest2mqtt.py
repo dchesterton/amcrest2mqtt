@@ -166,7 +166,7 @@ try:
     for code, payload in camera.event_actions("All", retries=5):
         log(str(payload))
 
-        if code == "AlarmLocal":
+        if code == "ProfileAlarmTransmit":
             mqtt_payload = "on" if payload["action"] == "Start" else "off"
             mqtt_publish(motion_topic, mqtt_payload)
 
