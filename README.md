@@ -17,8 +17,8 @@ It supports the following environment variables:
 - `HOME_ASSISTANT` (optional, default = false)
 - `HOME_ASSISTANT_PREFIX` (optional, default = 'homeassistant')
 
-It exposes events to the `amcrest2mqtt/[SERIAL_NUMBER]/event` MQTT topic. If the device is an AD110 doorbell it will expose the
-doorbell status to `amcrest2mqtt/[SERIAL_NUMBER]/doorbell`. If the device supports motion events it will expose motion events
+It exposes events to the `amcrest2mqtt/[SERIAL_NUMBER]/event` MQTT topic. If the device is an AD110 or AD410 doorbell it will expose
+the doorbell status to `amcrest2mqtt/[SERIAL_NUMBER]/doorbell`. If the device supports motion events it will expose motion events
 to `amcrest2mqtt/[SERIAL_NUMBER]/motion`.
 
 ## Device Support

@@ -138,7 +138,7 @@ if home_assistant:
 
     log("Writing Home Assistant discovery config...")
 
-    if device_type == "AD110":
+    if device_type in ["AD110", "AD410"]:
         mqtt_publish(doorbell_home_assistant_topic, json.dumps({
             "availability_topic": status_topic,
             "state_topic": doorbell_topic,
@@ -164,17 +164,15 @@ log("Listening for events...")
 
 try:
     for code, payload in camera.event_actions("All", retries=5):
-        log(str(payload))
-
         if code == "ProfileAlarmTransmit":
             mqtt_payload = "on" if payload["action"] == "Start" else "off"
             mqtt_publish(motion_topic, mqtt_payload)
-
-        if code == "_DoTalkAction_":
+        elif code == "_DoTalkAction_":
             mqtt_payload = "on" if payload["data"]["Action"] == "Invite" else "off"
             mqtt_publish(doorbell_topic, mqtt_payload)
 
         mqtt_publish(event_topic, json.dumps(payload))
+        log(str(payload))
 
 except AmcrestError as error:
     log(f"Amcrest error {error}", level="ERROR")
