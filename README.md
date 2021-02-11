@@ -21,6 +21,14 @@ It exposes events to the `amcrest2mqtt/[SERIAL_NUMBER]/event` MQTT topic. If the
 the doorbell status to `amcrest2mqtt/[SERIAL_NUMBER]/doorbell`. If the device supports motion events it will expose motion events
 to `amcrest2mqtt/[SERIAL_NUMBER]/motion`.
 
+## Buy Me A ~~Coffee~~ Beer 🍻
+
+A few people have kindly requested a way to donate a small amount of money. If you feel so inclined I've set up a "Buy Me A Coffee"
+page where you can donate a small sum. Please do not feel obligated to donate in any way - I work on the app because it's
+useful to myself and others, not for any financial gain - but any token of appreciation is much appreciated 🙂
+
+<a href="https://www.buymeacoffee.com/dchesterton"><img src="https://img.buymeacoffee.com/api/?url=aHR0cHM6Ly9pbWcuYnV5bWVhY29mZmVlLmNvbS9hcGkvP25hbWU9ZGNoZXN0ZXJ0b24mc2l6ZT0zMDAmYmctaW1hZ2U9Ym1jJmJhY2tncm91bmQ9ZmY4MTNm&creator=dchesterton&is_creating=building%20software%20to%20help%20create%20awesome%20homes&design_code=1&design_color=%23ff813f&slug=dchesterton" height="240" /></a>
+
 ## Device Support
 
 The app supports events for any Amcrest device supported by [`python-amcrest`](https://github.com/tchellomello/python-amcrest).
