@@ -8,6 +8,7 @@ on:
 jobs:
   docker-publish:
     name: Publish to Docker Hub
+    if: "!contains(github.event.head_commit.message, '[ci skip]')"
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout code
