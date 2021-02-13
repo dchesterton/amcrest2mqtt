@@ -88,11 +88,13 @@ def refresh_storage_sensors():
     Timer(storage_sensors_interval, refresh_storage_sensors).start()
     log("Fetching storage sensors...")
 
-    storage = camera.storage_all
-    mqtt_publish(topics["storage_used_percent"], str(storage["used_percent"]))
-    mqtt_publish(topics["storage_used"], str(storage["used"][0]))
-    mqtt_publish(topics["storage_total"], str(storage["total"][0]))
-
+    try:
+        storage = camera.storage_all
+        mqtt_publish(topics["storage_used_percent"], str(storage["used_percent"]))
+        mqtt_publish(topics["storage_used"], str(storage["used"][0]))
+        mqtt_publish(topics["storage_total"], str(storage["total"][0]))
+    except AmcrestError as error:
+        log(f"Error fetching storage information {error}", level="WARNING")
 
 def signal_handler(sig, frame):
     # exit immediately upon receiving a second SIGINT
