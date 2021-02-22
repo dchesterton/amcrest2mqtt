@@ -166,6 +166,7 @@ if home_assistant:
 
     base_config = {
         "availability_topic": topics["status"],
+        "qos": mqtt_qos,
         "device": {
             "name": f"Amcrest {device_type}",
             "manufacturer": "Amcrest",
@@ -218,10 +219,10 @@ if home_assistant:
     )
 
     mqtt_publish(
-        topics["storage_used"],
+        topics["home_assistant"]["storage_used"],
         base_config
         | {
-            "state_topic": topics["home_assistant"]["storage_used"],
+            "state_topic": topics["storage_used"],
             "unit_of_measurement": "GB",
             "icon": "mdi:micro-sd",
             "name": f"{device_name} Storage Used",
@@ -231,10 +232,10 @@ if home_assistant:
     )
 
     mqtt_publish(
-        topics["storage_total"],
+        topics["home_assistant"]["storage_total"],
         base_config
         | {
-            "state_topic": topics["home_assistant"]["storage_total"],
+            "state_topic": topics["storage_total"],
             "unit_of_measurement": "GB",
             "icon": "mdi:micro-sd",
             "name": f"{device_name} Storage Total",
