@@ -45,7 +45,6 @@ def log(msg, level="INFO"):
     ts = datetime.now(timezone.utc).strftime("%d/%m/%Y %H:%M:%S")
     print(f"{ts} [{level}] {msg}")
 
-
 def mqtt_publish(topic, payload, exit_on_error=True, json=False):
     global mqtt_client
 
@@ -62,12 +61,10 @@ def mqtt_publish(topic, payload, exit_on_error=True, json=False):
     if exit_on_error:
         exit_gracefully(msg.rc, skip_mqtt=True)
 
-
 def on_mqtt_disconnect(client, userdata, rc):
     if rc != 0:
         log(f"Unexpected MQTT disconnection", level="ERROR")
         exit_gracefully(rc, skip_mqtt=True)
-
 
 def exit_gracefully(rc, skip_mqtt=False):
     global topics, mqtt_client
@@ -80,7 +77,6 @@ def exit_gracefully(rc, skip_mqtt=False):
     # Use os._exit instead of sys.exit to ensure an MQTT disconnect event causes the program to exit correctly as they
     # occur on a separate thread
     os._exit(rc)
-
 
 def refresh_storage_sensors():
     global camera, topics, storage_sensors_interval
@@ -106,7 +102,6 @@ def signal_handler(sig, frame):
     is_exiting = True
     exit_gracefully(0)
 
-
 signal.signal(signal.SIGINT, signal_handler)
 
 # Connect to camera
@@ -117,6 +112,7 @@ camera = AmcrestCamera(
 log("Fetching camera details...")
 
 device_type = camera.device_type.replace("type=", "").strip()
+is_doorbell = device_type in ["AD110", "AD410"]
 serial_number = camera.serial_number.strip()
 sw_version = camera.software_information[0].replace("version=", "").strip()
 device_name = camera.machine_name.replace("name=", "").strip()
@@ -177,7 +173,7 @@ if home_assistant:
         },
     }
 
-    if device_type in ["AD110", "AD410"]:
+    if is_doorbell:
         mqtt_publish(
             topics["home_assistant"]["doorbell"],
             base_config
@@ -252,7 +248,7 @@ log("Listening for events...")
 
 try:
     for code, payload in camera.event_actions("All", retries=5):
-        if code == "ProfileAlarmTransmit":
+        if (is_doorbell and code == "ProfileAlarmTransmit") or (code == "VideoMotion" and not is_doorbell):
             motion_payload = "on" if payload["action"] == "Start" else "off"
             mqtt_publish(topics["motion"], motion_payload)
         elif code == "_DoTalkAction_":
