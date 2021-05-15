@@ -248,7 +248,7 @@ log("Listening for events...")
 
 try:
     for code, payload in camera.event_actions("All", retries=5):
-        if (is_doorbell and code == "ProfileAlarmTransmit") or (code == "VideoMotion" and not is_doorbell):
+        if (device_type == "AD110" and code == "ProfileAlarmTransmit") or (code == "VideoMotion" and device_type != "AD110"):
             motion_payload = "on" if payload["action"] == "Start" else "off"
             mqtt_publish(topics["motion"], motion_payload)
         elif code == "_DoTalkAction_":
