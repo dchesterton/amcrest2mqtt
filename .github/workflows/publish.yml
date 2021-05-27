@@ -16,7 +16,7 @@ jobs:
               id: version
               with:
                   version_file: ./VERSION
-                  github_token: ${{ secrets.GITHUB_TOKEN }}
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             - name: Checkout code
               uses: actions/checkout@v2.3.4
             - name: Set up QEMU
