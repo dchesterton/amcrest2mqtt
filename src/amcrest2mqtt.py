@@ -27,19 +27,6 @@ mqtt_password = os.getenv("MQTT_PASSWORD")  # can be None
 home_assistant = os.getenv("HOME_ASSISTANT") == "true"
 home_assistant_prefix = os.getenv("HOME_ASSISTANT_PREFIX") or "homeassistant"
 
-# Exit if any of the required vars are not provided
-if amcrest_host is None:
-    log("Please set the AMCREST_HOST environment variable", level="ERROR")
-    sys.exit(1)
-
-if amcrest_password is None:
-    log("Please set the AMCREST_PASSWORD environment variable", level="ERROR")
-    sys.exit(1)
-
-if mqtt_username is None:
-    log("Please set the MQTT_USERNAME environment variable", level="ERROR")
-    sys.exit(1)
-
 # Helper functions and callbacks
 def log(msg, level="INFO"):
     ts = datetime.now(timezone.utc).strftime("%d/%m/%Y %H:%M:%S")
@@ -102,6 +89,20 @@ def signal_handler(sig, frame):
     is_exiting = True
     exit_gracefully(0)
 
+# Exit if any of the required vars are not provided
+if amcrest_host is None:
+    log("Please set the AMCREST_HOST environment variable", level="ERROR")
+    sys.exit(1)
+
+if amcrest_password is None:
+    log("Please set the AMCREST_PASSWORD environment variable", level="ERROR")
+    sys.exit(1)
+
+if mqtt_username is None:
+    log("Please set the MQTT_USERNAME environment variable", level="ERROR")
+    sys.exit(1)
+
+# Handle interruptions
 signal.signal(signal.SIGINT, signal_handler)
 
 # Connect to camera
@@ -109,10 +110,13 @@ camera = AmcrestCamera(
     amcrest_host, amcrest_port, amcrest_username, amcrest_password
 ).camera
 
+# Fetch camera details
 log("Fetching camera details...")
 
 device_type = camera.device_type.replace("type=", "").strip()
-is_doorbell = device_type in ["AD110", "AD410"]
+is_ad110 = device_type == "AD110"
+is_ad410 = device_type == "AD410"
+is_doorbell = is_ad110 or is_ad410
 serial_number = camera.serial_number.strip()
 sw_version = camera.software_information[0].replace("version=", "").strip()
 device_name = camera.machine_name.replace("name=", "").strip()
@@ -129,11 +133,13 @@ topics = {
     "event": f"amcrest2mqtt/{serial_number}/event",
     "motion": f"amcrest2mqtt/{serial_number}/motion",
     "doorbell": f"amcrest2mqtt/{serial_number}/doorbell",
+    "human": f"amcrest2mqtt/{serial_number}/human",
     "storage_used": f"amcrest2mqtt/{serial_number}/storage/used",
     "storage_used_percent": f"amcrest2mqtt/{serial_number}/storage/used_percent",
     "storage_total": f"amcrest2mqtt/{serial_number}/storage/total",
     "home_assistant": {
         "doorbell": f"{home_assistant_prefix}/binary_sensor/amcrest2mqtt-{serial_number}/{device_slug}_doorbell/config",
+        "human": f"{home_assistant_prefix}/binary_sensor/amcrest2mqtt-{serial_number}/{device_slug}_human/config",
         "motion": f"{home_assistant_prefix}/binary_sensor/amcrest2mqtt-{serial_number}/{device_slug}_motion/config",
         "storage_used": f"{home_assistant_prefix}/sensor/amcrest2mqtt-{serial_number}/{device_slug}_storage_used/config",
         "storage_used_percent": f"{home_assistant_prefix}/sensor/amcrest2mqtt-{serial_number}/{device_slug}_storage_used_percent/config",
@@ -183,6 +189,21 @@ if home_assistant:
                 "payload_off": "off",
                 "name": f"{device_name} Doorbell",
                 "unique_id": f"{serial_number}.doorbell",
+            },
+            json=True,
+        )
+
+    if is_ad410:
+        mqtt_publish(
+            topics["home_assistant"]["human"],
+            base_config
+            | {
+                "state_topic": topics["human"],
+                "payload_on": "on",
+                "payload_off": "off",
+                "device_class": "motion",
+                "name": f"{device_name} Human",
+                "unique_id": f"{serial_number}.human",
             },
             json=True,
         )
@@ -248,9 +269,12 @@ log("Listening for events...")
 
 try:
     for code, payload in camera.event_actions("All", retries=5):
-        if (device_type == "AD110" and code == "ProfileAlarmTransmit") or (code == "VideoMotion" and device_type != "AD110"):
+        if (is_ad110 and code == "ProfileAlarmTransmit") or (code == "VideoMotion" and not is_ad110):
             motion_payload = "on" if payload["action"] == "Start" else "off"
             mqtt_publish(topics["motion"], motion_payload)
+        elif code == "CrossRegionDetection" and payload["data"]["ObjectType"] == "Human":
+            human_payload = "on" if payload["action"] == "Start" else "off"
+            mqtt_publish(topics["human"], human_payload)
         elif code == "_DoTalkAction_":
             doorbell_payload = "on" if payload["data"]["Action"] == "Invite" else "off"
             mqtt_publish(topics["doorbell"], doorbell_payload)
