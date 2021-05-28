@@ -10,6 +10,7 @@ RUN pip install --prefix=/install -r /requirements.txt
 FROM base
 COPY --from=builder /install /usr/local
 COPY src /app
+COPY VERSION /app
 WORKDIR /app
 
 CMD [ "python", "-u", "/app/amcrest2mqtt.py" ]

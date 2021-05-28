@@ -27,6 +27,18 @@ mqtt_password = os.getenv("MQTT_PASSWORD")  # can be None
 home_assistant = os.getenv("HOME_ASSISTANT") == "true"
 home_assistant_prefix = os.getenv("HOME_ASSISTANT_PREFIX") or "homeassistant"
 
+def read_file(file_name):
+    with open(file_name, 'r') as file:
+        data = file.read().replace('\n', '')
+
+    return data
+
+def read_version():
+    if os.path.isfile("./VERSION"):
+        return read_file("./VERSION")
+
+    return read_file("../VERSION")
+
 # Helper functions and callbacks
 def log(msg, level="INFO"):
     ts = datetime.now(timezone.utc).strftime("%d/%m/%Y %H:%M:%S")
@@ -102,6 +114,10 @@ if mqtt_username is None:
     log("Please set the MQTT_USERNAME environment variable", level="ERROR")
     sys.exit(1)
 
+version = read_version()
+
+log(f"App Version: {version}")
+
 # Handle interruptions
 signal.signal(signal.SIGINT, signal_handler)
 
@@ -129,6 +145,7 @@ log(f"Device name: {device_name}")
 
 # MQTT topics
 topics = {
+    "config": f"amcrest2mqtt/{serial_number}/config",
     "status": f"amcrest2mqtt/{serial_number}/status",
     "event": f"amcrest2mqtt/{serial_number}/event",
     "motion": f"amcrest2mqtt/{serial_number}/motion",
@@ -263,6 +280,14 @@ if home_assistant:
 
 # Main loop
 mqtt_publish(topics["status"], "online")
+mqtt_publish(topics["config"], {
+    "version": version,
+    "device_type": device_type,
+    "device_name": device_name,
+    "sw_version": sw_version,
+    "serial_number": serial_number,
+}, json=True)
+
 refresh_storage_sensors()
 
 log("Listening for events...")
