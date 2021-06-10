@@ -17,7 +17,7 @@ amcrest_host = os.getenv("AMCREST_HOST")
 amcrest_port = int(os.getenv("AMCREST_PORT") or 80)
 amcrest_username = os.getenv("AMCREST_USERNAME") or "admin"
 amcrest_password = os.getenv("AMCREST_PASSWORD")
-amcrest_probe_storage = os.getenv("AMCREST_PROBE_STORAGE") == "true"
+amcrest_poll_storage = os.getenv("AMCREST_POLL_STORAGE") == "true"
 
 mqtt_host = os.getenv("MQTT_HOST") or "localhost"
 mqtt_qos = int(os.getenv("MQTT_QOS") or 0)
@@ -240,7 +240,7 @@ if home_assistant:
         json=True,
     )
 
-    if amcrest_probe_storage:
+    if amcrest_poll_storage:
         mqtt_publish(
             topics["home_assistant"]["storage_used_percent"],
             base_config
@@ -290,7 +290,7 @@ mqtt_publish(topics["config"], {
     "serial_number": serial_number,
 }, json=True)
 
-if amcrest_probe_storage:
+if amcrest_poll_storage:
     refresh_storage_sensors()
 
 log("Listening for events...")
