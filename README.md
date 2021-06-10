@@ -9,6 +9,7 @@ It supports the following environment variables:
 -   `AMCREST_PORT` (optional, default = 80)
 -   `AMCREST_USERNAME` (optional, default = admin)
 -   `AMCREST_PASSWORD` (required)
+-   `AMCREST_PROBE_STORAGE` (optional, default = true)
 -   `MQTT_USERNAME` (required)
 -   `MQTT_PASSWORD` (optional, default = empty password)
 -   `MQTT_HOST` (optional, default = 'localhost')

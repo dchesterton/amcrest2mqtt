@@ -17,6 +17,7 @@ amcrest_host = os.getenv("AMCREST_HOST")
 amcrest_port = int(os.getenv("AMCREST_PORT") or 80)
 amcrest_username = os.getenv("AMCREST_USERNAME") or "admin"
 amcrest_password = os.getenv("AMCREST_PASSWORD")
+amcrest_probe_storage = os.getenv("AMCREST_PROBE_STORAGE") == "true"
 
 mqtt_host = os.getenv("MQTT_HOST") or "localhost"
 mqtt_qos = int(os.getenv("MQTT_QOS") or 0)
@@ -239,44 +240,45 @@ if home_assistant:
         json=True,
     )
 
-    mqtt_publish(
-        topics["home_assistant"]["storage_used_percent"],
-        base_config
-        | {
-            "state_topic": topics["storage_used_percent"],
-            "unit_of_measurement": "%",
-            "icon": "mdi:micro-sd",
-            "name": f"{device_name} Storage Used %",
-            "unique_id": f"{serial_number}.storage_used_percent",
-        },
-        json=True,
-    )
+    if amcrest_probe_storage:
+        mqtt_publish(
+            topics["home_assistant"]["storage_used_percent"],
+            base_config
+            | {
+                "state_topic": topics["storage_used_percent"],
+                "unit_of_measurement": "%",
+                "icon": "mdi:micro-sd",
+                "name": f"{device_name} Storage Used %",
+                "unique_id": f"{serial_number}.storage_used_percent",
+            },
+            json=True,
+        )
 
-    mqtt_publish(
-        topics["home_assistant"]["storage_used"],
-        base_config
-        | {
-            "state_topic": topics["storage_used"],
-            "unit_of_measurement": "GB",
-            "icon": "mdi:micro-sd",
-            "name": f"{device_name} Storage Used",
-            "unique_id": f"{serial_number}.storage_used",
-        },
-        json=True,
-    )
+        mqtt_publish(
+            topics["home_assistant"]["storage_used"],
+            base_config
+            | {
+                "state_topic": topics["storage_used"],
+                "unit_of_measurement": "GB",
+                "icon": "mdi:micro-sd",
+                "name": f"{device_name} Storage Used",
+                "unique_id": f"{serial_number}.storage_used",
+            },
+            json=True,
+        )
 
-    mqtt_publish(
-        topics["home_assistant"]["storage_total"],
-        base_config
-        | {
-            "state_topic": topics["storage_total"],
-            "unit_of_measurement": "GB",
-            "icon": "mdi:micro-sd",
-            "name": f"{device_name} Storage Total",
-            "unique_id": f"{serial_number}.storage_total",
-        },
-        json=True,
-    )
+        mqtt_publish(
+            topics["home_assistant"]["storage_total"],
+            base_config
+            | {
+                "state_topic": topics["storage_total"],
+                "unit_of_measurement": "GB",
+                "icon": "mdi:micro-sd",
+                "name": f"{device_name} Storage Total",
+                "unique_id": f"{serial_number}.storage_total",
+            },
+            json=True,
+        )
 
 # Main loop
 mqtt_publish(topics["status"], "online")
@@ -288,7 +290,8 @@ mqtt_publish(topics["config"], {
     "serial_number": serial_number,
 }, json=True)
 
-refresh_storage_sensors()
+if amcrest_probe_storage:
+    refresh_storage_sensors()
 
 log("Listening for events...")
 
