@@ -8,7 +8,6 @@ from json import dumps
 import signal
 from threading import Timer
 
-storage_sensors_interval = 60  # 1 hour
 is_exiting = False
 mqtt_client = None
 
@@ -17,6 +16,7 @@ amcrest_host = os.getenv("AMCREST_HOST")
 amcrest_port = int(os.getenv("AMCREST_PORT") or 80)
 amcrest_username = os.getenv("AMCREST_USERNAME") or "admin"
 amcrest_password = os.getenv("AMCREST_PASSWORD")
+storage_poll_interval = int(os.getenv("STORAGE_POLL_INTERVAL") or 3600)
 
 mqtt_host = os.getenv("MQTT_HOST") or "localhost"
 mqtt_qos = int(os.getenv("MQTT_QOS") or 0)
@@ -78,9 +78,9 @@ def exit_gracefully(rc, skip_mqtt=False):
     os._exit(rc)
 
 def refresh_storage_sensors():
-    global camera, topics, storage_sensors_interval
+    global camera, topics, storage_poll_interval
 
-    Timer(storage_sensors_interval, refresh_storage_sensors).start()
+    Timer(storage_poll_interval, refresh_storage_sensors).start()
     log("Fetching storage sensors...")
 
     try:
@@ -239,44 +239,45 @@ if home_assistant:
         json=True,
     )
 
-    mqtt_publish(
-        topics["home_assistant"]["storage_used_percent"],
-        base_config
-        | {
-            "state_topic": topics["storage_used_percent"],
-            "unit_of_measurement": "%",
-            "icon": "mdi:micro-sd",
-            "name": f"{device_name} Storage Used %",
-            "unique_id": f"{serial_number}.storage_used_percent",
-        },
-        json=True,
-    )
+    if storage_poll_interval > 0:
+        mqtt_publish(
+            topics["home_assistant"]["storage_used_percent"],
+            base_config
+            | {
+                "state_topic": topics["storage_used_percent"],
+                "unit_of_measurement": "%",
+                "icon": "mdi:micro-sd",
+                "name": f"{device_name} Storage Used %",
+                "unique_id": f"{serial_number}.storage_used_percent",
+            },
+            json=True,
+        )
 
-    mqtt_publish(
-        topics["home_assistant"]["storage_used"],
-        base_config
-        | {
-            "state_topic": topics["storage_used"],
-            "unit_of_measurement": "GB",
-            "icon": "mdi:micro-sd",
-            "name": f"{device_name} Storage Used",
-            "unique_id": f"{serial_number}.storage_used",
-        },
-        json=True,
-    )
+        mqtt_publish(
+            topics["home_assistant"]["storage_used"],
+            base_config
+            | {
+                "state_topic": topics["storage_used"],
+                "unit_of_measurement": "GB",
+                "icon": "mdi:micro-sd",
+                "name": f"{device_name} Storage Used",
+                "unique_id": f"{serial_number}.storage_used",
+            },
+            json=True,
+        )
 
-    mqtt_publish(
-        topics["home_assistant"]["storage_total"],
-        base_config
-        | {
-            "state_topic": topics["storage_total"],
-            "unit_of_measurement": "GB",
-            "icon": "mdi:micro-sd",
-            "name": f"{device_name} Storage Total",
-            "unique_id": f"{serial_number}.storage_total",
-        },
-        json=True,
-    )
+        mqtt_publish(
+            topics["home_assistant"]["storage_total"],
+            base_config
+            | {
+                "state_topic": topics["storage_total"],
+                "unit_of_measurement": "GB",
+                "icon": "mdi:micro-sd",
+                "name": f"{device_name} Storage Total",
+                "unique_id": f"{serial_number}.storage_total",
+            },
+            json=True,
+        )
 
 # Main loop
 mqtt_publish(topics["status"], "online")
@@ -288,7 +289,8 @@ mqtt_publish(topics["config"], {
     "serial_number": serial_number,
 }, json=True)
 
-refresh_storage_sensors()
+if storage_poll_interval > 0:
+    refresh_storage_sensors()
 
 log("Listening for events...")
 

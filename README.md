@@ -16,6 +16,7 @@ It supports the following environment variables:
 -   `MQTT_PORT` (optional, default = 1883)
 -   `HOME_ASSISTANT` (optional, default = false)
 -   `HOME_ASSISTANT_PREFIX` (optional, default = 'homeassistant')
+-   `STORAGE_POLL_INTERVAL` (optional, default = 3600) - how often to fetch storage data (in seconds)
 
 It exposes events to the following topics:
 
