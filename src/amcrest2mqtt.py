@@ -7,6 +7,7 @@ import sys
 from json import dumps
 import signal
 from threading import Timer
+import ssl
 
 is_exiting = False
 mqtt_client = None
@@ -23,6 +24,10 @@ mqtt_qos = int(os.getenv("MQTT_QOS") or 0)
 mqtt_port = int(os.getenv("MQTT_PORT") or 1883)
 mqtt_username = os.getenv("MQTT_USERNAME")
 mqtt_password = os.getenv("MQTT_PASSWORD")  # can be None
+mqtt_tls_enabled = os.getenv("MQTT_TLS_ENABLED") == "true"
+mqtt_tls_ca_cert = os.getenv("MQTT_TLS_CA_CERT")
+mqtt_tls_cert = os.getenv("MQTT_TLS_CERT")
+mqtt_tls_key = os.getenv("MQTT_TLS_KEY")
 
 home_assistant = os.getenv("HOME_ASSISTANT") == "true"
 home_assistant_prefix = os.getenv("HOME_ASSISTANT_PREFIX") or "homeassistant"
@@ -169,8 +174,27 @@ mqtt_client = mqtt.Client(
     client_id=f"amcrest2mqtt_{serial_number}", clean_session=False
 )
 mqtt_client.on_disconnect = on_mqtt_disconnect
-mqtt_client.username_pw_set(mqtt_username, password=mqtt_password)
 mqtt_client.will_set(topics["status"], payload="offline", qos=mqtt_qos, retain=True)
+if mqtt_tls_enabled:
+    log(f"Setting up MQTT for TLS")
+    if mqtt_tls_ca_cert is None:
+        log("Missing var: MQTT_TLS_CA_CERT", level="ERROR")
+        sys.exit(1)
+    if mqtt_tls_cert is None:
+        log("Missing var: MQTT_TLS_CERT", level="ERROR")
+        sys.exit(1)
+    if mqtt_tls_cert is None:
+        log("Missing var: MQTT_TLS_KEY", level="ERROR")
+        sys.exit(1)
+    mqtt_client.tls_set(
+        ca_certs=mqtt_tls_ca_cert,
+        certfile=mqtt_tls_cert,
+        keyfile=mqtt_tls_key,
+        cert_reqs=ssl.CERT_REQUIRED,
+        tls_version=ssl.PROTOCOL_TLS,
+    )
+else:
+    mqtt_client.username_pw_set(mqtt_username, password=mqtt_password)
 
 try:
     mqtt_client.connect(mqtt_host, port=mqtt_port)
