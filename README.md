@@ -14,6 +14,10 @@ It supports the following environment variables:
 -   `MQTT_HOST` (optional, default = 'localhost')
 -   `MQTT_QOS` (optional, default = 0)
 -   `MQTT_PORT` (optional, default = 1883)
+-   `MQTT_TLS_ENABLED` (required if using TLS) - set to `true` to enable
+-   `MQTT_TLS_CA_CERT` (required if using TLS) - path to the ca certs
+-   `MQTT_TLS_CERT` (required if using TLS) - path to the private cert
+-   `MQTT_TLS_KEY` (required if using TLS) - path to the private key
 -   `HOME_ASSISTANT` (optional, default = false)
 -   `HOME_ASSISTANT_PREFIX` (optional, default = 'homeassistant')
 -   `STORAGE_POLL_INTERVAL` (optional, default = 3600) - how often to fetch storage data (in seconds)
