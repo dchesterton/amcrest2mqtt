@@ -73,6 +73,8 @@ def on_mqtt_disconnect(client, userdata, rc):
 def exit_gracefully(rc, skip_mqtt=False):
     global topics, mqtt_client
 
+    log("Exiting app...")
+
     if mqtt_client is not None and mqtt_client.is_connected() and skip_mqtt == False:
         mqtt_publish(topics["status"], "offline", exit_on_error=False)
         mqtt_client.loop_stop(force=True)
@@ -95,6 +97,14 @@ def refresh_storage_sensors():
         mqtt_publish(topics["storage_total"], str(storage["total"][0]))
     except AmcrestError as error:
         log(f"Error fetching storage information {error}", level="WARNING")
+
+def ping_camera():
+    Timer(30, ping_camera).start()
+    response = os.system(f"ping -c1 -W100 {amcrest_host} >/dev/null 2>&1")
+
+    if response != 0:
+        log("Ping unsuccessful", level="ERROR")
+        exit_gracefully(1)
 
 def signal_handler(sig, frame):
     # exit immediately upon receiving a second SIGINT
@@ -134,14 +144,18 @@ camera = AmcrestCamera(
 # Fetch camera details
 log("Fetching camera details...")
 
-device_type = camera.device_type.replace("type=", "").strip()
-is_ad110 = device_type == "AD110"
-is_ad410 = device_type == "AD410"
-is_doorbell = is_ad110 or is_ad410
-serial_number = camera.serial_number.strip()
-sw_version = camera.software_information[0].replace("version=", "").strip()
-device_name = camera.machine_name.replace("name=", "").strip()
-device_slug = slugify(device_name, separator="_")
+try:
+    device_type = camera.device_type.replace("type=", "").strip()
+    is_ad110 = device_type == "AD110"
+    is_ad410 = device_type == "AD410"
+    is_doorbell = is_ad110 or is_ad410
+    serial_number = camera.serial_number.strip()
+    sw_version = camera.software_information[0].replace("version=", "").strip()
+    device_name = camera.machine_name.replace("name=", "").strip()
+    device_slug = slugify(device_name, separator="_")
+except AmcrestError as error:
+    log(f"Error fetching camera details", level="ERROR")
+    exit_gracefully(1)
 
 log(f"Device type: {device_type}")
 log(f"Serial number: {serial_number}")
@@ -316,10 +330,12 @@ mqtt_publish(topics["config"], {
 if storage_poll_interval > 0:
     refresh_storage_sensors()
 
+ping_camera()
+
 log("Listening for events...")
 
 try:
-    for code, payload in camera.event_actions("All", retries=5):
+    for code, payload in camera.event_actions("All", retries=5, timeout_cmd=(10.00, 3600)):
         if (is_ad110 and code == "ProfileAlarmTransmit") or (code == "VideoMotion" and not is_ad110):
             motion_payload = "on" if payload["action"] == "Start" else "off"
             mqtt_publish(topics["motion"], motion_payload)
