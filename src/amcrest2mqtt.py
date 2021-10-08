@@ -18,6 +18,7 @@ amcrest_port = int(os.getenv("AMCREST_PORT") or 80)
 amcrest_username = os.getenv("AMCREST_USERNAME") or "admin"
 amcrest_password = os.getenv("AMCREST_PASSWORD")
 storage_poll_interval = int(os.getenv("STORAGE_POLL_INTERVAL") or 3600)
+camera_ping_enabled = os.getenv("CAMERA_PING_ENABLED") == "true" 
 
 mqtt_host = os.getenv("MQTT_HOST") or "localhost"
 mqtt_qos = int(os.getenv("MQTT_QOS") or 0)
@@ -330,7 +331,11 @@ mqtt_publish(topics["config"], {
 if storage_poll_interval > 0:
     refresh_storage_sensors()
 
-ping_camera()
+if camera_ping_enabled:
+    log("Setting up camera ping...")
+    ping_camera()
+else:
+    log("Skipping camera ping...")
 
 log("Listening for events...")
 
