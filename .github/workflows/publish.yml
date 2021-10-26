@@ -14,7 +14,7 @@ jobs:
             - name: Checkout code
               uses: actions/checkout@v2.3.5
             - name: Bump version
-              uses: remorses/bump-version@js
+              uses: chamini2/bump-version@js
               id: version
               with:
                   version_file: ./VERSION
