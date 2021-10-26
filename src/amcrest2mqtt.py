@@ -149,7 +149,12 @@ try:
     is_ad110 = device_type == "AD110"
     is_ad410 = device_type == "AD410"
     is_doorbell = is_ad110 or is_ad410
-    serial_number = camera.serial_number.strip()
+    serial_number = camera.serial_number
+
+    if not isinstance(serial_number, str):
+        log(f"Error fetching serial number", level="ERROR")
+        exit_gracefully(1)
+
     sw_version = camera.software_information[0].replace("version=", "").strip()
     device_name = camera.machine_name.replace("name=", "").strip()
     device_slug = slugify(device_name, separator="_")
