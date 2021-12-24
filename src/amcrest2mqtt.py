@@ -92,11 +92,15 @@ def refresh_storage_sensors():
 
     try:
         storage = camera.storage_all
+
         mqtt_publish(topics["storage_used_percent"], str(storage["used_percent"]))
-        mqtt_publish(topics["storage_used"], str(storage["used"][0]))
-        mqtt_publish(topics["storage_total"], str(storage["total"][0]))
+        mqtt_publish(topics["storage_used"], to_gb(storage["used"]))
+        mqtt_publish(topics["storage_total"], to_gb(storage["total"]))
     except AmcrestError as error:
         log(f"Error fetching storage information {error}", level="WARNING")
+
+def to_gb(total):
+    return str(round(float(total[0]) / 1024 / 1024 / 1024, 2))
 
 def ping_camera():
     Timer(30, ping_camera).start()
@@ -292,6 +296,7 @@ if home_assistant:
                 "icon": "mdi:micro-sd",
                 "name": f"{device_name} Storage Used %",
                 "unique_id": f"{serial_number}.storage_used_percent",
+                "entity_category": "diagnostic",
             },
             json=True,
         )
@@ -305,6 +310,7 @@ if home_assistant:
                 "icon": "mdi:micro-sd",
                 "name": f"{device_name} Storage Used",
                 "unique_id": f"{serial_number}.storage_used",
+                "entity_category": "diagnostic",
             },
             json=True,
         )
@@ -318,6 +324,7 @@ if home_assistant:
                 "icon": "mdi:micro-sd",
                 "name": f"{device_name} Storage Total",
                 "unique_id": f"{serial_number}.storage_total",
+                "entity_category": "diagnostic",
             },
             json=True,
         )
