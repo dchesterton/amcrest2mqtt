@@ -14,11 +14,10 @@ jobs:
             - name: Checkout code
               uses: actions/checkout@v2.4.0
             - name: Bump version
-              uses: chamini2/bump-version@js
+              uses: remorses/bump-version@js
               id: version
               with:
                   version_file: ./VERSION
-                  github_token: ${{ secrets.GITHUB_TOKEN }}
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             - name: Checkout code
