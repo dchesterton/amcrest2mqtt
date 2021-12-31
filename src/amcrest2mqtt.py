@@ -262,6 +262,8 @@ if home_assistant:
     }
 
     if is_doorbell:
+        doorbell_name = "Doorbell" if device_name == "Doorbell" else f"{device_name} Doorbell"
+
         mqtt_publish(topics["home_assistant_legacy"]["doorbell"], "")
         mqtt_publish(
             topics["home_assistant"]["doorbell"],
@@ -271,7 +273,7 @@ if home_assistant:
                 "payload_on": "on",
                 "payload_off": "off",
                 "icon": "mdi:doorbell",
-                "name": f"{device_name} Doorbell",
+                "name": doorbell_name,
                 "unique_id": f"{serial_number}.doorbell",
             },
             json=True,
