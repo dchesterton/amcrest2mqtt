@@ -186,7 +186,7 @@ topics = {
     "storage_used": f"amcrest2mqtt/{serial_number}/storage/used",
     "storage_used_percent": f"amcrest2mqtt/{serial_number}/storage/used_percent",
     "storage_total": f"amcrest2mqtt/{serial_number}/storage/total",
-    "home_assistant": {
+    "home_assistant_legacy": {
         "doorbell": f"{home_assistant_prefix}/binary_sensor/amcrest2mqtt-{serial_number}/{device_slug}_doorbell/config",
         "human": f"{home_assistant_prefix}/binary_sensor/amcrest2mqtt-{serial_number}/{device_slug}_human/config",
         "motion": f"{home_assistant_prefix}/binary_sensor/amcrest2mqtt-{serial_number}/{device_slug}_motion/config",
@@ -196,6 +196,17 @@ topics = {
         "version": f"{home_assistant_prefix}/sensor/amcrest2mqtt-{serial_number}/{device_slug}_version/config",
         "host": f"{home_assistant_prefix}/sensor/amcrest2mqtt-{serial_number}/{device_slug}_host/config",
         "serial_number": f"{home_assistant_prefix}/sensor/amcrest2mqtt-{serial_number}/{device_slug}_serial_number/config",
+    },
+    "home_assistant": {
+        "doorbell": f"{home_assistant_prefix}/binary_sensor/amcrest2mqtt-{serial_number}/doorbell/config",
+        "human": f"{home_assistant_prefix}/binary_sensor/amcrest2mqtt-{serial_number}/human/config",
+        "motion": f"{home_assistant_prefix}/binary_sensor/amcrest2mqtt-{serial_number}/motion/config",
+        "storage_used": f"{home_assistant_prefix}/sensor/amcrest2mqtt-{serial_number}/storage_used/config",
+        "storage_used_percent": f"{home_assistant_prefix}/sensor/amcrest2mqtt-{serial_number}/storage_used_percent/config",
+        "storage_total": f"{home_assistant_prefix}/sensor/amcrest2mqtt-{serial_number}/storage_total/config",
+        "version": f"{home_assistant_prefix}/sensor/amcrest2mqtt-{serial_number}/version/config",
+        "host": f"{home_assistant_prefix}/sensor/amcrest2mqtt-{serial_number}/host/config",
+        "serial_number": f"{home_assistant_prefix}/sensor/amcrest2mqtt-{serial_number}/serial_number/config",
     },
 }
 
@@ -251,6 +262,7 @@ if home_assistant:
     }
 
     if is_doorbell:
+        mqtt_publish(topics["home_assistant_legacy"]["doorbell"], "")
         mqtt_publish(
             topics["home_assistant"]["doorbell"],
             base_config
@@ -266,6 +278,7 @@ if home_assistant:
         )
 
     if is_ad410:
+        mqtt_publish(topics["home_assistant_legacy"]["human"], "")
         mqtt_publish(
             topics["home_assistant"]["human"],
             base_config
@@ -280,6 +293,7 @@ if home_assistant:
             json=True,
         )
 
+    mqtt_publish(topics["home_assistant_legacy"]["motion"], "")
     mqtt_publish(
         topics["home_assistant"]["motion"],
         base_config
@@ -294,6 +308,7 @@ if home_assistant:
         json=True,
     )
 
+    mqtt_publish(topics["home_assistant_legacy"]["version"], "")
     mqtt_publish(
         topics["home_assistant"]["version"],
         base_config
@@ -309,6 +324,7 @@ if home_assistant:
         json=True,
     )
 
+    mqtt_publish(topics["home_assistant_legacy"]["serial_number"], "")
     mqtt_publish(
         topics["home_assistant"]["serial_number"],
         base_config
@@ -324,6 +340,7 @@ if home_assistant:
         json=True,
     )
 
+    mqtt_publish(topics["home_assistant_legacy"]["host"], "")
     mqtt_publish(
         topics["home_assistant"]["host"],
         base_config
@@ -340,6 +357,7 @@ if home_assistant:
     )
 
     if storage_poll_interval > 0:
+        mqtt_publish(topics["home_assistant_legacy"]["storage_used_percent"], "")
         mqtt_publish(
             topics["home_assistant"]["storage_used_percent"],
             base_config
@@ -355,6 +373,7 @@ if home_assistant:
             json=True,
         )
 
+        mqtt_publish(topics["home_assistant_legacy"]["storage_used"], "")
         mqtt_publish(
             topics["home_assistant"]["storage_used"],
             base_config
@@ -369,6 +388,7 @@ if home_assistant:
             json=True,
         )
 
+        mqtt_publish(topics["home_assistant_legacy"]["storage_total"], "")
         mqtt_publish(
             topics["home_assistant"]["storage_total"],
             base_config
