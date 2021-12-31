@@ -21,6 +21,7 @@ It supports the following environment variables:
 -   `HOME_ASSISTANT` (optional, default = false)
 -   `HOME_ASSISTANT_PREFIX` (optional, default = 'homeassistant')
 -   `STORAGE_POLL_INTERVAL` (optional, default = 3600) - how often to fetch storage data (in seconds)
+-   `DEVICE_NAME` (optional) - override the default device name used in the Amcrest app
 
 It exposes events to the following topics:
 
@@ -28,6 +29,7 @@ It exposes events to the following topics:
 -   `amcrest2mqtt/[SERIAL_NUMBER]/doorbell` - doorbell status (if AD110 or AD410)
 -   `amcrest2mqtt/[SERIAL_NUMBER]/human` - human detection (if AD410)
 -   `amcrest2mqtt/[SERIAL_NUMBER]/motion` - motion events (if supported)
+-   `amcrest2mqtt/[SERIAL_NUMBER]/config` - device configuration information
 
 ## Device Support
 
@@ -62,7 +64,7 @@ services:
 
 ### Multiple Devices
 
-The app will not support multiple devices. You can run multiple instances of the app if you need to expose events for multiple devies.
+The app will not support multiple devices. You can run multiple instances of the app if you need to expose events for multiple devices.
 
 ### Non-Docker Environments
 

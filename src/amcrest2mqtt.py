@@ -17,7 +17,9 @@ amcrest_host = os.getenv("AMCREST_HOST")
 amcrest_port = int(os.getenv("AMCREST_PORT") or 80)
 amcrest_username = os.getenv("AMCREST_USERNAME") or "admin"
 amcrest_password = os.getenv("AMCREST_PASSWORD")
+
 storage_poll_interval = int(os.getenv("STORAGE_POLL_INTERVAL") or 3600)
+device_name = os.getenv("DEVICE_NAME")
 
 mqtt_host = os.getenv("MQTT_HOST") or "localhost"
 mqtt_qos = int(os.getenv("MQTT_QOS") or 0)
@@ -160,7 +162,9 @@ try:
         exit_gracefully(1)
 
     sw_version = camera.software_information[0].replace("version=", "").strip()
-    device_name = camera.machine_name.replace("name=", "").strip()
+    if not device_name:
+        device_name = camera.machine_name.replace("name=", "").strip()
+
     device_slug = slugify(device_name, separator="_")
 except AmcrestError as error:
     log(f"Error fetching camera details", level="ERROR")
@@ -189,6 +193,9 @@ topics = {
         "storage_used": f"{home_assistant_prefix}/sensor/amcrest2mqtt-{serial_number}/{device_slug}_storage_used/config",
         "storage_used_percent": f"{home_assistant_prefix}/sensor/amcrest2mqtt-{serial_number}/{device_slug}_storage_used_percent/config",
         "storage_total": f"{home_assistant_prefix}/sensor/amcrest2mqtt-{serial_number}/{device_slug}_storage_total/config",
+        "version": f"{home_assistant_prefix}/sensor/amcrest2mqtt-{serial_number}/{device_slug}_version/config",
+        "host": f"{home_assistant_prefix}/sensor/amcrest2mqtt-{serial_number}/{device_slug}_host/config",
+        "serial_number": f"{home_assistant_prefix}/sensor/amcrest2mqtt-{serial_number}/{device_slug}_serial_number/config",
     },
 }
 
@@ -251,6 +258,7 @@ if home_assistant:
                 "state_topic": topics["doorbell"],
                 "payload_on": "on",
                 "payload_off": "off",
+                "icon": "mdi:doorbell",
                 "name": f"{device_name} Doorbell",
                 "unique_id": f"{serial_number}.doorbell",
             },
@@ -282,6 +290,51 @@ if home_assistant:
             "device_class": "motion",
             "name": f"{device_name} Motion",
             "unique_id": f"{serial_number}.motion",
+        },
+        json=True,
+    )
+
+    mqtt_publish(
+        topics["home_assistant"]["version"],
+        base_config
+        | {
+            "state_topic": topics["config"],
+            "value_template": "{{ value_json.sw_version }}",
+            "icon": "mdi:package-up",
+            "name": f"{device_name} Version",
+            "unique_id": f"{serial_number}.version",
+            "entity_category": "diagnostic",
+            "enabled_by_default": False
+        },
+        json=True,
+    )
+
+    mqtt_publish(
+        topics["home_assistant"]["serial_number"],
+        base_config
+        | {
+            "state_topic": topics["config"],
+            "value_template": "{{ value_json.serial_number }}",
+            "icon": "mdi:alphabetical-variant",
+            "name": f"{device_name} Serial Number",
+            "unique_id": f"{serial_number}.serial_number",
+            "entity_category": "diagnostic",
+            "enabled_by_default": False
+        },
+        json=True,
+    )
+
+    mqtt_publish(
+        topics["home_assistant"]["host"],
+        base_config
+        | {
+            "state_topic": topics["config"],
+            "value_template": "{{ value_json.host }}",
+            "icon": "mdi:ip-network",
+            "name": f"{device_name} Host",
+            "unique_id": f"{serial_number}.host",
+            "entity_category": "diagnostic",
+            "enabled_by_default": False
         },
         json=True,
     )
@@ -337,6 +390,7 @@ mqtt_publish(topics["config"], {
     "device_name": device_name,
     "sw_version": sw_version,
     "serial_number": serial_number,
+    "host": amcrest_host,
 }, json=True)
 
 if storage_poll_interval > 0:
