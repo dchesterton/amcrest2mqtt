@@ -348,6 +348,7 @@ if home_assistant:
                 "unit_of_measurement": "%",
                 "icon": "mdi:micro-sd",
                 "name": f"{device_name} Storage Used %",
+                "object_id": f"{device_slug}_storage_used_percent",
                 "unique_id": f"{serial_number}.storage_used_percent",
                 "entity_category": "diagnostic",
             },
