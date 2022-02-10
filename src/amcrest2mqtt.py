@@ -17,8 +17,10 @@ amcrest_host = os.getenv("AMCREST_HOST")
 amcrest_port = int(os.getenv("AMCREST_PORT") or 80)
 amcrest_username = os.getenv("AMCREST_USERNAME") or "admin"
 amcrest_password = os.getenv("AMCREST_PASSWORD")
+
 storage_poll_interval = int(os.getenv("STORAGE_POLL_INTERVAL") or 3600)
 camera_ping_enabled = os.getenv("CAMERA_PING_ENABLED") == "true" 
+device_name = os.getenv("DEVICE_NAME")
 
 mqtt_host = os.getenv("MQTT_HOST") or "localhost"
 mqtt_qos = int(os.getenv("MQTT_QOS") or 0)
@@ -93,11 +95,15 @@ def refresh_storage_sensors():
 
     try:
         storage = camera.storage_all
+
         mqtt_publish(topics["storage_used_percent"], str(storage["used_percent"]))
-        mqtt_publish(topics["storage_used"], str(storage["used"][0]))
-        mqtt_publish(topics["storage_total"], str(storage["total"][0]))
+        mqtt_publish(topics["storage_used"], to_gb(storage["used"]))
+        mqtt_publish(topics["storage_total"], to_gb(storage["total"]))
     except AmcrestError as error:
         log(f"Error fetching storage information {error}", level="WARNING")
+
+def to_gb(total):
+    return str(round(float(total[0]) / 1024 / 1024 / 1024, 2))
 
 def ping_camera():
     Timer(30, ping_camera).start()
@@ -150,9 +156,16 @@ try:
     is_ad110 = device_type == "AD110"
     is_ad410 = device_type == "AD410"
     is_doorbell = is_ad110 or is_ad410
-    serial_number = camera.serial_number.strip()
+    serial_number = camera.serial_number
+
+    if not isinstance(serial_number, str):
+        log(f"Error fetching serial number", level="ERROR")
+        exit_gracefully(1)
+
     sw_version = camera.software_information[0].replace("version=", "").strip()
-    device_name = camera.machine_name.replace("name=", "").strip()
+    if not device_name:
+        device_name = camera.machine_name.replace("name=", "").strip()
+
     device_slug = slugify(device_name, separator="_")
 except AmcrestError as error:
     log(f"Error fetching camera details", level="ERROR")
@@ -174,13 +187,27 @@ topics = {
     "storage_used": f"amcrest2mqtt/{serial_number}/storage/used",
     "storage_used_percent": f"amcrest2mqtt/{serial_number}/storage/used_percent",
     "storage_total": f"amcrest2mqtt/{serial_number}/storage/total",
-    "home_assistant": {
+    "home_assistant_legacy": {
         "doorbell": f"{home_assistant_prefix}/binary_sensor/amcrest2mqtt-{serial_number}/{device_slug}_doorbell/config",
         "human": f"{home_assistant_prefix}/binary_sensor/amcrest2mqtt-{serial_number}/{device_slug}_human/config",
         "motion": f"{home_assistant_prefix}/binary_sensor/amcrest2mqtt-{serial_number}/{device_slug}_motion/config",
         "storage_used": f"{home_assistant_prefix}/sensor/amcrest2mqtt-{serial_number}/{device_slug}_storage_used/config",
         "storage_used_percent": f"{home_assistant_prefix}/sensor/amcrest2mqtt-{serial_number}/{device_slug}_storage_used_percent/config",
         "storage_total": f"{home_assistant_prefix}/sensor/amcrest2mqtt-{serial_number}/{device_slug}_storage_total/config",
+        "version": f"{home_assistant_prefix}/sensor/amcrest2mqtt-{serial_number}/{device_slug}_version/config",
+        "host": f"{home_assistant_prefix}/sensor/amcrest2mqtt-{serial_number}/{device_slug}_host/config",
+        "serial_number": f"{home_assistant_prefix}/sensor/amcrest2mqtt-{serial_number}/{device_slug}_serial_number/config",
+    },
+    "home_assistant": {
+        "doorbell": f"{home_assistant_prefix}/binary_sensor/amcrest2mqtt-{serial_number}/doorbell/config",
+        "human": f"{home_assistant_prefix}/binary_sensor/amcrest2mqtt-{serial_number}/human/config",
+        "motion": f"{home_assistant_prefix}/binary_sensor/amcrest2mqtt-{serial_number}/motion/config",
+        "storage_used": f"{home_assistant_prefix}/sensor/amcrest2mqtt-{serial_number}/storage_used/config",
+        "storage_used_percent": f"{home_assistant_prefix}/sensor/amcrest2mqtt-{serial_number}/storage_used_percent/config",
+        "storage_total": f"{home_assistant_prefix}/sensor/amcrest2mqtt-{serial_number}/storage_total/config",
+        "version": f"{home_assistant_prefix}/sensor/amcrest2mqtt-{serial_number}/version/config",
+        "host": f"{home_assistant_prefix}/sensor/amcrest2mqtt-{serial_number}/host/config",
+        "serial_number": f"{home_assistant_prefix}/sensor/amcrest2mqtt-{serial_number}/serial_number/config",
     },
 }
 
@@ -236,6 +263,9 @@ if home_assistant:
     }
 
     if is_doorbell:
+        doorbell_name = "Doorbell" if device_name == "Doorbell" else f"{device_name} Doorbell"
+
+        mqtt_publish(topics["home_assistant_legacy"]["doorbell"], "")
         mqtt_publish(
             topics["home_assistant"]["doorbell"],
             base_config
@@ -243,13 +273,15 @@ if home_assistant:
                 "state_topic": topics["doorbell"],
                 "payload_on": "on",
                 "payload_off": "off",
-                "name": f"{device_name} Doorbell",
+                "icon": "mdi:doorbell",
+                "name": doorbell_name,
                 "unique_id": f"{serial_number}.doorbell",
             },
             json=True,
         )
 
     if is_ad410:
+        mqtt_publish(topics["home_assistant_legacy"]["human"], "")
         mqtt_publish(
             topics["home_assistant"]["human"],
             base_config
@@ -264,6 +296,7 @@ if home_assistant:
             json=True,
         )
 
+    mqtt_publish(topics["home_assistant_legacy"]["motion"], "")
     mqtt_publish(
         topics["home_assistant"]["motion"],
         base_config
@@ -278,7 +311,56 @@ if home_assistant:
         json=True,
     )
 
+    mqtt_publish(topics["home_assistant_legacy"]["version"], "")
+    mqtt_publish(
+        topics["home_assistant"]["version"],
+        base_config
+        | {
+            "state_topic": topics["config"],
+            "value_template": "{{ value_json.sw_version }}",
+            "icon": "mdi:package-up",
+            "name": f"{device_name} Version",
+            "unique_id": f"{serial_number}.version",
+            "entity_category": "diagnostic",
+            "enabled_by_default": False
+        },
+        json=True,
+    )
+
+    mqtt_publish(topics["home_assistant_legacy"]["serial_number"], "")
+    mqtt_publish(
+        topics["home_assistant"]["serial_number"],
+        base_config
+        | {
+            "state_topic": topics["config"],
+            "value_template": "{{ value_json.serial_number }}",
+            "icon": "mdi:alphabetical-variant",
+            "name": f"{device_name} Serial Number",
+            "unique_id": f"{serial_number}.serial_number",
+            "entity_category": "diagnostic",
+            "enabled_by_default": False
+        },
+        json=True,
+    )
+
+    mqtt_publish(topics["home_assistant_legacy"]["host"], "")
+    mqtt_publish(
+        topics["home_assistant"]["host"],
+        base_config
+        | {
+            "state_topic": topics["config"],
+            "value_template": "{{ value_json.host }}",
+            "icon": "mdi:ip-network",
+            "name": f"{device_name} Host",
+            "unique_id": f"{serial_number}.host",
+            "entity_category": "diagnostic",
+            "enabled_by_default": False
+        },
+        json=True,
+    )
+
     if storage_poll_interval > 0:
+        mqtt_publish(topics["home_assistant_legacy"]["storage_used_percent"], "")
         mqtt_publish(
             topics["home_assistant"]["storage_used_percent"],
             base_config
@@ -287,11 +369,14 @@ if home_assistant:
                 "unit_of_measurement": "%",
                 "icon": "mdi:micro-sd",
                 "name": f"{device_name} Storage Used %",
+                "object_id": f"{device_slug}_storage_used_percent",
                 "unique_id": f"{serial_number}.storage_used_percent",
+                "entity_category": "diagnostic",
             },
             json=True,
         )
 
+        mqtt_publish(topics["home_assistant_legacy"]["storage_used"], "")
         mqtt_publish(
             topics["home_assistant"]["storage_used"],
             base_config
@@ -301,10 +386,12 @@ if home_assistant:
                 "icon": "mdi:micro-sd",
                 "name": f"{device_name} Storage Used",
                 "unique_id": f"{serial_number}.storage_used",
+                "entity_category": "diagnostic",
             },
             json=True,
         )
 
+        mqtt_publish(topics["home_assistant_legacy"]["storage_total"], "")
         mqtt_publish(
             topics["home_assistant"]["storage_total"],
             base_config
@@ -314,6 +401,7 @@ if home_assistant:
                 "icon": "mdi:micro-sd",
                 "name": f"{device_name} Storage Total",
                 "unique_id": f"{serial_number}.storage_total",
+                "entity_category": "diagnostic",
             },
             json=True,
         )
@@ -326,6 +414,7 @@ mqtt_publish(topics["config"], {
     "device_name": device_name,
     "sw_version": sw_version,
     "serial_number": serial_number,
+    "host": amcrest_host,
 }, json=True)
 
 if storage_poll_interval > 0:
