@@ -77,7 +77,7 @@ There are a couple of Home Assistant Addons that use my code to be able to port 
 https://github.com/ikifar2012/amcrest2mqtt-addon/blob/master/README.md
 [![Open your Home Assistant instance and show the add add-on repository dialog with a specific repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fikifar2012%2Fha-addons)
 
-https://github.com/dchesterton/amcrest2mqtt/blob/main/README.md
+https://github.com/robsonke/hassio-addons/blob/master/amcrest2mqtt/README.md
 [![Open your Home Assistant instance and show the add add-on repository dialog with a specific repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Frobsonke%2Fhassio-addons)
 
 ## Buy Me A ~~Coffee~~ Beer 🍻
