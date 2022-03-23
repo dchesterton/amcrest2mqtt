@@ -20,7 +20,7 @@ It supports the following environment variables:
 -   `MQTT_TLS_KEY` (required if using TLS) - path to the private key
 -   `HOME_ASSISTANT` (optional, default = false)
 -   `HOME_ASSISTANT_PREFIX` (optional, default = 'homeassistant')
--   `STORAGE_POLL_INTERVAL` (optional, default = 3600) - how often to fetch storage data (in seconds)
+-   `STORAGE_POLL_INTERVAL` (optional, default = 3600) - how often to fetch storage data (in seconds) (set to 0 to disable functionality)
 -   `DEVICE_NAME` (optional) - override the default device name used in the Amcrest app
 
 It exposes events to the following topics:

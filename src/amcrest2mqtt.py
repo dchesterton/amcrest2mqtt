@@ -8,6 +8,7 @@ from json import dumps
 import signal
 from threading import Timer
 import ssl
+import asyncio
 
 is_exiting = False
 mqtt_client = None
@@ -59,8 +60,8 @@ def mqtt_publish(topic, payload, exit_on_error=True, json=False):
     )
 
     if msg.rc == mqtt.MQTT_ERR_SUCCESS:
-        msg.wait_for_publish()
-        return msg
+        msg.wait_for_publish(2)
+        return
 
     log(f"Error publishing MQTT message: {mqtt.error_string(msg.rc)}", level="ERROR")
 
@@ -79,7 +80,6 @@ def exit_gracefully(rc, skip_mqtt=False):
 
     if mqtt_client is not None and mqtt_client.is_connected() and skip_mqtt == False:
         mqtt_publish(topics["status"], "offline", exit_on_error=False)
-        mqtt_client.loop_stop(force=True)
         mqtt_client.disconnect()
 
     # Use os._exit instead of sys.exit to ensure an MQTT disconnect event causes the program to exit correctly as they
@@ -103,14 +103,6 @@ def refresh_storage_sensors():
 
 def to_gb(total):
     return str(round(float(total[0]) / 1024 / 1024 / 1024, 2))
-
-def ping_camera():
-    Timer(30, ping_camera).start()
-    response = os.system(f"ping -c1 -W100 {amcrest_host} >/dev/null 2>&1")
-
-    if response != 0:
-        log("Ping unsuccessful", level="ERROR")
-        exit_gracefully(1)
 
 def signal_handler(sig, frame):
     # exit immediately upon receiving a second SIGINT
@@ -162,6 +154,10 @@ try:
         exit_gracefully(1)
 
     sw_version = camera.software_information[0].replace("version=", "").strip()
+    build_version = camera.software_information[1].strip()
+
+    amcrest_version = f"{sw_version} ({build_version})"
+
     if not device_name:
         device_name = camera.machine_name.replace("name=", "").strip()
 
@@ -172,7 +168,7 @@ except AmcrestError as error:
 
 log(f"Device type: {device_type}")
 log(f"Serial number: {serial_number}")
-log(f"Software version: {sw_version}")
+log(f"Software version: {amcrest_version}")
 log(f"Device name: {device_name}")
 
 # MQTT topics
@@ -256,7 +252,7 @@ if home_assistant:
             "manufacturer": "Amcrest",
             "model": device_type,
             "identifiers": serial_number,
-            "sw_version": sw_version,
+            "sw_version": amcrest_version,
             "via_device": "amcrest2mqtt",
         },
     }
@@ -411,7 +407,7 @@ mqtt_publish(topics["config"], {
     "version": version,
     "device_type": device_type,
     "device_name": device_name,
-    "sw_version": sw_version,
+    "sw_version": amcrest_version,
     "serial_number": serial_number,
     "host": amcrest_host,
 }, json=True)
@@ -419,25 +415,26 @@ mqtt_publish(topics["config"], {
 if storage_poll_interval > 0:
     refresh_storage_sensors()
 
-ping_camera()
-
 log("Listening for events...")
 
-try:
-    for code, payload in camera.event_actions("All", retries=5, timeout_cmd=(10.00, 3600)):
-        if (is_ad110 and code == "ProfileAlarmTransmit") or (code == "VideoMotion" and not is_ad110):
-            motion_payload = "on" if payload["action"] == "Start" else "off"
-            mqtt_publish(topics["motion"], motion_payload)
-        elif code == "CrossRegionDetection" and payload["data"]["ObjectType"] == "Human":
-            human_payload = "on" if payload["action"] == "Start" else "off"
-            mqtt_publish(topics["human"], human_payload)
-        elif code == "_DoTalkAction_":
-            doorbell_payload = "on" if payload["data"]["Action"] == "Invite" else "off"
-            mqtt_publish(topics["doorbell"], doorbell_payload)
+async def main():
+    try:
+        async for code, payload in camera.async_event_actions("All"):
+            if (is_ad110 and code == "ProfileAlarmTransmit") or (code == "VideoMotion" and not is_ad110):
+                motion_payload = "on" if payload["action"] == "Start" else "off"
+                mqtt_publish(topics["motion"], motion_payload)
+            elif code == "CrossRegionDetection" and payload["data"]["ObjectType"] == "Human":
+                human_payload = "on" if payload["action"] == "Start" else "off"
+                mqtt_publish(topics["human"], human_payload)
+            elif code == "_DoTalkAction_":
+                doorbell_payload = "on" if payload["data"]["Action"] == "Invite" else "off"
+                mqtt_publish(topics["doorbell"], doorbell_payload)
 
-        mqtt_publish(topics["event"], payload, json=True)
-        log(str(payload))
+            mqtt_publish(topics["event"], payload, json=True)
+            log(str(payload))
 
-except AmcrestError as error:
-    log(f"Amcrest error {error}", level="ERROR")
-    exit_gracefully(1)
+    except AmcrestError as error:
+        log(f"Amcrest error: {error}", level="ERROR")
+        exit_gracefully(1)
+
+asyncio.run(main())
