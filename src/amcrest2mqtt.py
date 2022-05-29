@@ -28,6 +28,7 @@ mqtt_port = int(os.getenv("MQTT_PORT") or 1883)
 mqtt_username = os.getenv("MQTT_USERNAME")
 mqtt_password = os.getenv("MQTT_PASSWORD")  # can be None
 mqtt_tls_enabled = os.getenv("MQTT_TLS_ENABLED") == "true"
+mqtt_tls_insecure = os.getenv("MQTT_TLS_INSECURE") == "true"
 mqtt_tls_ca_cert = os.getenv("MQTT_TLS_CA_CERT")
 mqtt_tls_cert = os.getenv("MQTT_TLS_CERT")
 mqtt_tls_key = os.getenv("MQTT_TLS_KEY")
@@ -123,9 +124,46 @@ if amcrest_password is None:
     log("Please set the AMCREST_PASSWORD environment variable", level="ERROR")
     sys.exit(1)
 
-if mqtt_username is None:
-    log("Please set the MQTT_USERNAME environment variable", level="ERROR")
-    sys.exit(1)
+if mqtt_tls_enabled:
+    # TLS will be enabled
+    if not mqtt_tls_insecure:
+        # TLS verification will be enforced
+        if mqtt_tls_ca_cert is None:
+            # No TLS CA certificate was given
+            log("Missing var: MQTT_TLS_CA_CERT", level="ERROR")
+            sys.exit(1)
+        elif not os.path.exists(mqtt_tls_ca_cert) or not os.path.isfile(mqtt_tls_ca_cert):
+            # Provided TLS CA certificate not found
+            log("Missing file: MQTT_TLS_CA_CERT file {} not found".format(mqtt_tls_ca_cert), level="ERROR")
+            sys.exit(1)
+    
+    # For TLS, MQTT accepts either TLS client auth or username auth.
+    if bool(mqtt_tls_cert) != bool(mqtt_tls_key):
+        # One TLS client auth variable was given, but not the other
+        if mqtt_tls_cert is None:
+            log("Missing var: MQTT_TLS_CERT", level="ERROR")
+            sys.exit(1)
+        if mqtt_tls_key is None:
+            log("Missing var: MQTT_TLS_KEY", level="ERROR")
+            sys.exit(1)
+    elif mqtt_tls_cert is not None and mqtt_tls_key is not None:
+        # Both TLS client auth variables were given
+        if not os.path.exists(mqtt_tls_cert) or not os.path.isfile(mqtt_tls_cert):
+            log("Missing file: MQTT_TLS_CERT file {} not found".format(mqtt_tls_cert), level="ERROR")
+            sys.exit(1)
+        if not os.path.exists(mqtt_tls_key) or not os.path.isfile(mqtt_tls_key):
+            log("Missing file: MQTT_TLS_KEY file {} not found".format(mqtt_tls_key), level="ERROR")
+            sys.exit(1)
+    else:
+        # No TLS client auth variables were given, so username auth is required
+        if mqtt_username is None:
+            log("Missing var: MQTT_USERNAME", level="ERROR")
+            sys.exit(1)
+else:
+    # TLS not enabled, so only option is username auth.
+    if mqtt_username is None:
+        log("Missing var: MQTT_USERNAME", level="ERROR")
+        sys.exit(1)
 
 version = read_version()
 
@@ -212,25 +250,22 @@ mqtt_client = mqtt.Client(
 )
 mqtt_client.on_disconnect = on_mqtt_disconnect
 mqtt_client.will_set(topics["status"], payload="offline", qos=mqtt_qos, retain=True)
+
 if mqtt_tls_enabled:
     log(f"Setting up MQTT for TLS")
-    if mqtt_tls_ca_cert is None:
-        log("Missing var: MQTT_TLS_CA_CERT", level="ERROR")
-        sys.exit(1)
-    if mqtt_tls_cert is None:
-        log("Missing var: MQTT_TLS_CERT", level="ERROR")
-        sys.exit(1)
-    if mqtt_tls_cert is None:
-        log("Missing var: MQTT_TLS_KEY", level="ERROR")
-        sys.exit(1)
     mqtt_client.tls_set(
         ca_certs=mqtt_tls_ca_cert,
         certfile=mqtt_tls_cert,
         keyfile=mqtt_tls_key,
-        cert_reqs=ssl.CERT_REQUIRED,
+        cert_reqs=ssl.CERT_NONE if mqtt_tls_insecure else ssl.CERT_REQUIRED,
         tls_version=ssl.PROTOCOL_TLS,
     )
-else:
+    if mqtt_tls_insecure:
+        log("MQTT TLS verification disabled - this is very insecure!  Consider setting MQTT_TLS_CA_CERT instead.", level="WARN")
+        mqtt_client.tls_insecure_set(mqtt_tls_insecure)
+
+# Need to pass username and password if not using TLS client authentication
+if not mqtt_tls_enabled or (mqtt_tls_cert is None and mqtt_tls_key is None):
     mqtt_client.username_pw_set(mqtt_username, password=mqtt_password)
 
 try:

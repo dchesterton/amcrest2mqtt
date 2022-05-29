@@ -9,15 +9,16 @@ It supports the following environment variables:
 -   `AMCREST_PORT` (optional, default = 80)
 -   `AMCREST_USERNAME` (optional, default = admin)
 -   `AMCREST_PASSWORD` (required)
--   `MQTT_USERNAME` (required)
+-   `MQTT_USERNAME` (required, unless using TLS client authentication)
 -   `MQTT_PASSWORD` (optional, default = empty password)
 -   `MQTT_HOST` (optional, default = 'localhost')
 -   `MQTT_QOS` (optional, default = 0)
 -   `MQTT_PORT` (optional, default = 1883)
--   `MQTT_TLS_ENABLED` (required if using TLS) - set to `true` to enable
--   `MQTT_TLS_CA_CERT` (required if using TLS) - path to the ca certs
--   `MQTT_TLS_CERT` (required if using TLS) - path to the private cert
--   `MQTT_TLS_KEY` (required if using TLS) - path to the private key
+-   `MQTT_TLS_ENABLED` (optional, default = false) - set to `true` to enable TLS server authentication
+-   `MQTT_TLS_INSECURE` (optional, default = false) - disables TLS certificate verification - use with caution!  Consider using `MQTT_TLS_CA_CERT` instead.
+-   `MQTT_TLS_CA_CERT` (required if using TLS, unless `MQTT_TLS_INSECURE` is set) - path to the trusted CA certificate file
+-   `MQTT_TLS_CERT` (required if using TLS client authentication) - path to the client's certificate file
+-   `MQTT_TLS_KEY` (required if using TLS client authentication) - path to the client's private key file
 -   `HOME_ASSISTANT` (optional, default = false)
 -   `HOME_ASSISTANT_PREFIX` (optional, default = 'homeassistant')
 -   `STORAGE_POLL_INTERVAL` (optional, default = 3600) - how often to fetch storage data (in seconds) (set to 0 to disable functionality)
