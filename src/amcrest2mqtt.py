@@ -210,6 +210,7 @@ topics = {
 mqtt_client = mqtt.Client(
     client_id=f"amcrest2mqtt_{serial_number}", clean_session=False
 )
+mqtt_client.username_pw_set(mqtt_username, password=mqtt_password)
 mqtt_client.on_disconnect = on_mqtt_disconnect
 mqtt_client.will_set(topics["status"], payload="offline", qos=mqtt_qos, retain=True)
 if mqtt_tls_enabled:
@@ -230,8 +231,6 @@ if mqtt_tls_enabled:
         cert_reqs=ssl.CERT_REQUIRED,
         tls_version=ssl.PROTOCOL_TLS,
     )
-else:
-    mqtt_client.username_pw_set(mqtt_username, password=mqtt_password)
 
 try:
     mqtt_client.connect(mqtt_host, port=mqtt_port)
