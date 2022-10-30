@@ -423,7 +423,7 @@ async def main():
             if (is_ad110 and code == "ProfileAlarmTransmit") or (code == "VideoMotion" and not is_ad110):
                 motion_payload = "on" if payload["action"] == "Start" else "off"
                 mqtt_publish(topics["motion"], motion_payload)
-            elif code == "CrossRegionDetection" and payload["data"]["ObjectType"] == "Human":
+            elif code == "CrossRegionDetection" and payload["data"]["Object"]["ObjectType"] == "Human":
                 human_payload = "on" if payload["action"] == "Start" else "off"
                 mqtt_publish(topics["human"], human_payload)
             elif code == "_DoTalkAction_":
