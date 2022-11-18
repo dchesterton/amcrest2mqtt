@@ -50,7 +50,7 @@ version: "3"
 services:
     amcrest2mqtt:
         container_name: amcrest2mqtt
-        image: dchesterton/amcrest2mqtt:latest
+        image: ghcr.io/danclough/amcrest2mqtt:latest
         restart: unless-stopped
         environment:
             AMCREST_HOST: 192.168.0.1
@@ -80,11 +80,3 @@ https://github.com/ikifar2012/amcrest2mqtt-addon/blob/master/README.md
 
 https://github.com/robsonke/hassio-addons/blob/master/amcrest2mqtt/README.md
 [![Open your Home Assistant instance and show the add add-on repository dialog with a specific repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Frobsonke%2Fhassio-addons)
-
-## Buy Me A ~~Coffee~~ Beer 🍻
-
-A few people have kindly requested a way to donate a small amount of money. If you feel so inclined I've set up a "Buy Me A Coffee"
-page where you can donate a small sum. Please do not feel obligated to donate in any way - I work on the app because it's
-useful to myself and others, not for any financial gain - but any token of appreciation is much appreciated 🙂
-
-<a href="https://www.buymeacoffee.com/dchesterton"><img src="https://img.buymeacoffee.com/api/?url=aHR0cHM6Ly9pbWcuYnV5bWVhY29mZmVlLmNvbS9hcGkvP25hbWU9ZGNoZXN0ZXJ0b24mc2l6ZT0zMDAmYmctaW1hZ2U9Ym1jJmJhY2tncm91bmQ9ZmY4MTNm&creator=dchesterton&is_creating=building%20software%20to%20help%20create%20awesome%20homes&design_code=1&design_color=%23ff813f&slug=dchesterton" height="240" /></a>
