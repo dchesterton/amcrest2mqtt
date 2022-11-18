@@ -4,6 +4,12 @@ on:
     push:
         branches:
             - main
+        paths-ignore:
+            - 'README.md'
+            - 'LICENSE'
+            - 'VERSION'
+            - '.gitignore'
+            - '.github/**'
 
 jobs:
     docker-publish:
