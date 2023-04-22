@@ -102,7 +102,12 @@ def refresh_storage_sensors():
         log(f"Error fetching storage information {error}", level="WARNING")
 
 def to_gb(total):
-    return str(round(float(total[0]) / 1024 / 1024 / 1024, 2))
+    try:
+        return str(round(float(total[0]) / 1024 / 1024 / 1024, 2))
+    except ValueError as error:
+        # the api sometimes returns the string "unknown" instead of a number
+        log(f"Unexpected error: {error}", level="WARNING")
+        return 0
 
 def signal_handler(sig, frame):
     # exit immediately upon receiving a second SIGINT
